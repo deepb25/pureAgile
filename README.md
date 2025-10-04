@@ -44,11 +44,11 @@
 - **Real-time**: GraphQL Subscriptions over WebSocket
 
 ### 3. Database Layer
-- **Primary Database**: Amazon DocumentDB (MongoDB-compatible)
-- **Database Clusters**: Multi-AZ with read replicas
+- **Primary Database**: MongoDB Atlas (Managed MongoDB Service)
+- **Database Clusters**: Multi-region with read replicas
 - **Cache Layer**: Amazon ElastiCache Redis (Cluster Mode)
-- **Search Engine**: Amazon OpenSearch Service
-- **Vector Storage**: MongoDB Atlas Search (for AI embeddings)
+- **Search Engine**: MongoDB Atlas Search (Full-text & Vector Search)
+- **Vector Storage**: MongoDB Atlas Vector Search (for AI embeddings)
 
 ### 4. GraphQL Architecture
 - **Schema Design**: Code-first approach with decorators
@@ -189,20 +189,20 @@
 │  │  │  │               🔍 SEARCH & ANALYTICS LAYER                                               │   │   │ │
 │  │  │  │                                                                                         │   │   │ │
 │  │  │  │  ┌─────────────────────────────────┐    ┌─────────────────────────────────────────┐   │   │   │ │
-│  │  │  │  │     🔎 OpenSearch Service       │    │         📁 S3 Buckets                  │   │   │   │ │
-│  │  │  │  │     (Elasticsearch Compatible)   │    │         Multi-Purpose Storage          │   │   │   │ │
+│  │  │  │  │   � MongoDB Atlas Search       │    │         📁 S3 Buckets                  │   │   │   │ │
+│  │  │  │  │   (Integrated with Atlas)       │    │         Multi-Purpose Storage          │   │   │   │ │
 │  │  │  │  │                                 │    │                                         │   │   │   │ │
 │  │  │  │  │ ┌─────────┐ ┌─────────┐ ┌─────┐ │    │ ┌─────────────┐ ┌─────────────┐ ┌──────┐│   │   │   │ │
-│  │  │  │  │ │ Master  │ │ Data    │ │Data │ │    │ │Attachments/ │ │ Static      │ │Backup││   │   │   │ │
-│  │  │  │  │ │ Node    │ │ Node    │ │Node │ │    │ │Files        │ │ Assets      │ │Data  ││   │   │   │ │
-│  │  │  │  │ │t3.med   │ │ t3.med  │ │t3.m │ │    │ │             │ │ (CDN)       │ │      ││   │   │   │ │
+│  │  │  │  │ │ Full-text│ │ Vector  │ │Auto │ │    │ │Attachments/ │ │ Static      │ │Backup││   │   │   │ │
+│  │  │  │  │ │ Search   │ │ Search  │ │Complete│   │ │Files        │ │ Assets      │ │Data  ││   │   │   │ │
+│  │  │  │  │ │ Index    │ │ Index   │ │Index│ │    │ │             │ │ (CDN)       │ │      ││   │   │   │ │
 │  │  │  │  │ └─────────┘ └─────────┘ └─────┘ │    │ └─────────────┘ └─────────────┘ └──────┘│   │   │   │ │
 │  │  │  │  │                                 │    │                                         │   │   │   │ │
 │  │  │  │  │ Features:                       │    │ Features:                               │   │   │   │ │
-│  │  │  │  │ • Full-text Story Search        │    │ • Versioning Enabled                    │   │   │   │ │
-│  │  │  │  │ • Advanced Analytics            │    │ • Cross-Region Replication              │   │   │   │ │
-│  │  │  │  │ • Real-time Indexing            │    │ • Lifecycle Policies                    │   │   │   │ │
-│  │  │  │  │ • Custom Dashboards             │    │ • Direct Upload from Frontend           │   │   │   │ │
+│  │  │  │  │ • Native MongoDB Integration    │    │ • Versioning Enabled                    │   │   │   │ │
+│  │  │  │  │ • Real-time Index Updates       │    │ • Cross-Region Replication              │   │   │   │ │
+│  │  │  │  │ • Vector Similarity Search      │    │ • Lifecycle Policies                    │   │   │   │ │
+│  │  │  │  │ • Autocomplete & Faceted Search │    │ • Direct Upload from Frontend           │   │   │   │ │
 │  │  │  │  └─────────────────────────────────┘    └─────────────────────────────────────────┘   │   │   │ │
 │  │  │  └─────────────────────────────────────────────────────────────────────────────────────────┘   │   │ │
 │  │  └─────────────────────────────────────────────────────────────────────────────────────────────┘   │ │
@@ -565,12 +565,13 @@ enum StoryType {
   metadata: {
     aiSuggestions: [...],
     similarStories: [ObjectId],
-    riskScore: 0.3
+    riskScore: 0.3,
+    embedding: [0.1, 0.2, 0.3, ...] // 768-dimensional vector for similarity search
   },
   createdAt: ISODate,
   updatedAt: ISODate,
-  // Indexes: projectId_1_status_1, assigneeId_1, sprintId_1, 
-  // title_text_description_text, tags_1, createdAt_-1
+  // MongoDB Indexes: projectId_1_status_1, assigneeId_1, sprintId_1, createdAt_-1
+  // Atlas Search Indexes: stories_text_search, stories_vector_search, stories_autocomplete
 }
 
 // Sprints Collection
@@ -660,20 +661,26 @@ Backend ECS Task:
     - BUCKET_NAME
 ```
 
-### 2. DocumentDB Configuration
+### 2. MongoDB Atlas Configuration
 ```yaml
-DocumentDB Cluster:
-  Engine: MongoDB 4.0 compatible
-  Instance Class: db.r6g.large
-  Number of Instances: 3 (1 primary, 2 replicas)
-  Storage: Encrypted at rest
-  Backup Retention: 7 days
-  VPC Security Groups: Database access only
+MongoDB Atlas Cluster:
+  Tier: M30 (Dedicated)
+  Cloud Provider: AWS
+  Region: us-east-1 (Primary), us-west-2 (Secondary)
+  MongoDB Version: 7.0
+  Storage: Encrypted at rest with AWS KMS
+  Backup: Continuous backup with point-in-time recovery
+  
+Atlas Search:
+  Search Indexes: Full-text search on stories, epics, comments
+  Vector Search: AI embeddings for similarity matching
+  Autocomplete: Real-time search suggestions
   
 Connection Settings:
-  TLS: Required
-  Authentication: Username/Password in Secrets Manager
+  TLS: Required (TLS 1.2+)
+  Authentication: Database user with SCRAM-SHA-256
   Connection Pooling: Enabled (min: 5, max: 100)
+  VPC Peering: Private connection to AWS VPC
 ```
 
 ### 3. ElastiCache Configuration
@@ -691,17 +698,28 @@ Redis Cluster:
     - DataLoader caching
 ```
 
-### 4. OpenSearch Configuration
+### 4. MongoDB Atlas Search Configuration
 ```yaml
-OpenSearch Service:
-  Engine Version: 2.3
-  Instance Type: t3.medium.search
-  Number of Instances: 3
-  Storage: 50GB per node
-  Use Cases:
-    - Full-text search across stories/epics
-    - Advanced analytics and reporting
-    - Search suggestions and autocomplete
+Atlas Search Indexes:
+  Stories Index:
+    Fields: title, description, tags, comments
+    Analyzers: standard, keyword, autocomplete
+    Facets: status, priority, assignee, project
+    
+  Vector Search Index:
+    Fields: embedding (768 dimensions)
+    Similarity: cosine, euclidean, dotProduct
+    Use Cases: Similar story recommendations
+    
+  Autocomplete Index:
+    Fields: title, tags, user names
+    Token Order: sequential, any
+    Max Insertions: 1
+    
+  Performance:
+    Search Latency: < 50ms (95th percentile)
+    Index Update: Near real-time
+    Concurrent Queries: 1000+
 ```
 
 ## GraphQL Performance Optimizations
@@ -908,36 +926,96 @@ db.stories.aggregate([
 ]);
 ```
 
-### 2. Search and Filtering
+### 2. MongoDB Atlas Search Implementation
 ```javascript
-// Full-text search with MongoDB
-db.stories.createIndex({
-  title: "text",
-  description: "text",
-  tags: "text"
-});
+// Atlas Search Index Definition (stories_search)
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "title": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "description": {
+        "type": "string",
+        "analyzer": "lucene.standard"
+      },
+      "tags": {
+        "type": "string",
+        "analyzer": "lucene.keyword"
+      },
+      "status": { "type": "string" },
+      "priority": { "type": "string" },
+      "projectId": { "type": "objectId" }
+    }
+  }
+}
 
-// Advanced search query
+// Full-text search with Atlas Search
 db.stories.aggregate([
   {
-    $match: {
-      $and: [
-        { projectId: ObjectId("...") },
-        {
-          $or: [
-            { $text: { $search: "authentication login" } },
-            { tags: { $in: ["auth", "security"] } }
-          ]
-        }
-      ]
+    $search: {
+      "index": "stories_search",
+      "compound": {
+        "must": [
+          {
+            "text": {
+              "query": "authentication login",
+              "path": ["title", "description"]
+            }
+          }
+        ],
+        "filter": [
+          {
+            "equals": {
+              "path": "projectId",
+              "value": ObjectId("...")
+            }
+          }
+        ]
+      }
     }
   },
   {
     $addFields: {
-      score: { $meta: "textScore" }
+      "score": { $meta: "searchScore" }
     }
   },
-  { $sort: { score: { $meta: "textScore" } } }
+  { $sort: { "score": -1 } }
+]);
+
+// Vector similarity search for AI recommendations
+db.stories.aggregate([
+  {
+    $vectorSearch: {
+      "index": "stories_vector_search",
+      "path": "metadata.embedding",
+      "queryVector": [0.1, 0.2, 0.3, ...], // Current story embedding
+      "numCandidates": 100,
+      "limit": 10
+    }
+  },
+  {
+    $addFields: {
+      "similarity_score": { $meta: "vectorSearchScore" }
+    }
+  }
+]);
+
+// Autocomplete search
+db.stories.aggregate([
+  {
+    $search: {
+      "index": "stories_autocomplete",
+      "autocomplete": {
+        "query": "GraphQL",
+        "path": "title",
+        "tokenOrder": "sequential"
+      }
+    }
+  },
+  { $limit: 10 }
 ]);
 ```
 
@@ -1126,10 +1204,12 @@ Apollo Studio Metrics:
 
 ### Production Environment
 ```yaml
-DocumentDB Cluster:
-  Primary: db.r6g.xlarge (4 vCPU, 32GB RAM)
-  Replicas: 2x db.r6g.large (2 vCPU, 16GB RAM)
-  Storage: 200GB encrypted
+MongoDB Atlas:
+  Cluster Tier: M30 (2.5GB RAM, 2 vCPU)
+  Storage: 200GB
+  Atlas Search: Included (no additional cost)
+  Backup: Continuous backup enabled
+  Multi-region: Primary + 1 Secondary region
   
 ECS Services:
   GraphQL API: 3x tasks (1 vCPU, 2GB RAM)
@@ -1138,16 +1218,17 @@ ECS Services:
 ElastiCache:
   Redis: 3x cache.r6g.large nodes
   
-OpenSearch:
-  3x t3.medium.search nodes (50GB each)
-  
-Estimated Monthly Cost: $1,200-1,500
+Estimated Monthly Cost: $1,100-1,400
+  (Savings from using Atlas vs DocumentDB + OpenSearch)
 ```
 
 ### Staging Environment
 ```yaml
-DocumentDB Cluster:
-  Single instance: db.t4g.medium (2 vCPU, 4GB RAM)
+MongoDB Atlas:
+  Cluster Tier: M10 (2GB RAM, shared vCPU)
+  Storage: 50GB
+  Atlas Search: Included (no additional cost)
+  Single region deployment
   
 ECS Services:
   GraphQL API: 1x task (0.5 vCPU, 1GB RAM)
@@ -1156,10 +1237,8 @@ ECS Services:
 ElastiCache:
   Redis: 1x cache.t4g.micro node
   
-OpenSearch:
-  1x t3.small.search node (20GB)
-  
-Estimated Monthly Cost: $200-300
+Estimated Monthly Cost: $150-250
+  (Significant savings with Atlas M10 tier)
 ```
 
 ## Data Flow Architecture Diagrams
