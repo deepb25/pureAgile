@@ -1024,7 +1024,6 @@ ElastiCache:
 OpenSearch:
   3x t3.medium.search nodes (50GB each)
   
-Estimated Monthly Cost: $1,200-1,500
 ```
 
 ### Staging Environment
@@ -1041,8 +1040,6 @@ ElastiCache:
   
 OpenSearch:
   1x t3.small.search node (20GB)
-  
-Estimated Monthly Cost: $200-300
 ```
 
 This architecture provides a comprehensive, production-ready foundation for PureAgile with MongoDB and GraphQL, offering excellent scalability, real-time capabilities, and robust integration options while maintaining cost-effectiveness and operational simplicity.
