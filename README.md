@@ -19,7 +19,7 @@
 - **Infrastructure**: AWS cloud-native services with containerized microservices
 
 ### Target Users
-- **Development Teams** (5-50 developers): Sprint planning, story tracking, code integration
+- **Development Teams**:  Sprint planning, story tracking, code integration
 - **Product Managers**: Roadmap planning, stakeholder reporting, feature prioritization  
 - **Scrum Masters**: Team velocity analysis, impediment tracking, ceremony facilitation
 - **Engineering Managers**: Resource allocation, team performance, delivery metrics
